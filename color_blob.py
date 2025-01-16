@@ -237,7 +237,10 @@ def display_lines(frame: np.ndarray, lines: Optional[np.ndarray]) -> None:
 
 
 if __name__ == "__main__":
-    video_path = "toronto.mp4"
+    video_path = "VIEO_PATH_HERE"
+    # Define HSV color thresholds for path detection
+    # Use color_helper.py to find the optimal values
     hsv_min = np.array([0, 8, 89], np.uint8)
     hsv_max = np.array([150, 51, 255], np.uint8)
+    # Process the video
     process_video(cv2.VideoCapture(video_path), hsv_min, hsv_max, size_reduction=1)

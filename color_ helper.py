@@ -77,5 +77,6 @@ def main(video_path, size_reduction=4) -> None:
     cv2.destroyAllWindows()
 
 if __name__ == "__main__":
-    path = 'toronto.mp4'
-    main(path, size_reduction=2)
+    path = 'VIEO_PATH_HERE'
+    # Run application
+    main(path, size_reduction=1)
