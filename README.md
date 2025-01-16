@@ -1,4 +1,4 @@
-# Path domain via color blob
+# Path masking via color blob
 ## Overview
 
 This project provides a set of Python scripts to detect and highlight specified paths in video frames using color blob detection. The primary focus is on identifying regions of interest based on specific color ranges, detecting contours, and visualizing the results.
@@ -56,7 +56,7 @@ Color_helper.py application:
 
 1. Install the required dependencies:
     ```bash
-    pip install opencv-python-headless numpy
+    pip install opencv-python numpy
     ```
 2. Run the script:
     ```bash
