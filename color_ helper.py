@@ -37,7 +37,7 @@ def get_trackbar_values(window_name: str) -> tuple:
     vMax = cv2.getTrackbarPos('VMax', window_name)
     return hMin, sMin, vMin, hMax, sMax, vMax
 
-def main(video_path) -> None:
+def main(video_path, size_reduction=4) -> None:
     """Main function to run the HSV threshold adjustment tool."""
     cap = cv2.VideoCapture(video_path)
     cv2.namedWindow('frame')
@@ -49,16 +49,17 @@ def main(video_path) -> None:
     while True:
         k = cv2.waitKey(1) & 0xFF
         if k == ord('p'):
+            print('pause')
             paused = not paused
         if k == ord('q'):
             break
+        print(paused)
         if not paused:
-            cap.set(cv2.CAP_PROP_POS_FRAMES, 1900)
             ret, frame = cap.read()
             paused = True
             if not ret:
                 break
-            frame = frame[::1, ::1].astype("uint8")
+            frame = frame[::size_reduction, ::size_reduction].astype("uint8")
 
         hMin, sMin, vMin, hMax, sMax, vMax = get_trackbar_values('frame')
         lower = np.array([hMin, sMin, vMin])
@@ -76,5 +77,5 @@ def main(video_path) -> None:
     cv2.destroyAllWindows()
 
 if __name__ == "__main__":
-    path = 'Image_Resources/toronto.mp4'
-    main(path)
+    path = 'toronto.mp4'
+    main(path, size_reduction=2)

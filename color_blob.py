@@ -62,13 +62,13 @@ def _helper(frame: np.ndarray, colour_max: np.ndarray, colour_min: np.ndarray) -
 
     for cnt in contours:
         hull = cv2.convexHull(cnt)
-        if cv2.contourArea(hull) > 1000:
+        if cv2.contourArea(hull) > height//4:
             cv2.drawContours(frame, [hull], -1, (0, 255, 0), 2, offset=(0, crop))
 
     return frame
 
 def process_video(source: cv2.VideoCapture, colour_min: np.ndarray = np.array([0, 0, 178], np.uint8), 
-               colour_max: np.ndarray = np.array([55, 38, 255], np.uint8)) -> None:
+               colour_max: np.ndarray = np.array([55, 38, 255], np.uint8), size_reduction=2, debug=True) -> None:
     """
     Process a video frame by frame, applying image processing techniques.
 
@@ -98,16 +98,18 @@ def process_video(source: cv2.VideoCapture, colour_min: np.ndarray = np.array([0
                 break
 
             # Downsample frame for faster processing
-            frame = frame[::3, ::3]
+            frame = frame[::size_reduction, ::size_reduction]
             frame_count += 1
             print(f"Processing frame {frame_count}")
 
             # Process the frame
             processed_frame, mask = process_frame(frame, colour_min, colour_max)
-
-            # Concatenate processed frames vertically
-            combined_frame = np.vstack((processed_frame, mask))
-            cv2.imshow('DEBUG', combined_frame)
+            if debug:
+                # Concatenate processed frames vertically
+                combined_frame = np.vstack((processed_frame, mask))
+                cv2.imshow('DEBUG', combined_frame)
+            else:
+                cv2.imshow('Processed Frame', processed_frame)
 
     # Clean up resources
     source.release()
@@ -166,14 +168,14 @@ def process_frame(frame: np.ndarray, colour_min: np.ndarray,
     height, width = frame.shape[:2]
     crop = height // 2
     cropped_frame = frame[crop:]
-
+    roi = region_of_interest(cropped_frame)
     # Morphological operations
-    mask = cv2.erode(cropped_frame, np.ones((8, 8), np.uint8))
+    mask = cv2.erode(roi, np.ones((8, 8), np.uint8))
     mask = cv2.dilate(mask, np.ones((32, 32), np.uint8))
     mask = cv2.GaussianBlur(mask, (11, 11), 0)
 
     # Get floor color and create mask
-    h, s, v = get_floor_colour(cropped_frame[crop // 3:, width // 3: width - width // 3][::2, ::2])
+    h, s, v = get_floor_colour(roi[crop // 3:, width // 3: width - width // 3][::2, ::2])
     colour_mask = cv2.inRange(mask, 
                             np.array([0, max(0, s - 25), v], np.uint8),
                             np.array([min(255, h + 10), min(255, s + 10), 255], np.uint8))
@@ -205,11 +207,12 @@ def region_of_interest(frame: np.ndarray) -> np.ndarray:
         np.ndarray: Frame with region of interest applied.
     """
     height, width = frame.shape[:2]
-    triangle = np.array([[(width // 3, height), (width - width // 3, height), (width // 2, 0)]], dtype=np.int32)
-    mask = np.zeros_like(frame)
-    if len(frame.shape) == 3:  # Check if the frame is colored (3 channels)
-        mask = mask[:, :, 0]  # Use a single channel for the mask
-    cv2.fillPoly(mask, [triangle], 255)
+    trapezoid = np.array([
+        [(width // 8, height), (width - width // 8, height), (width - width // 4, 0), (width // 4, 0)]
+    ], dtype=np.int32)
+    #triangle = np.array([[(width // 4, height), (width - width // 4, height), (50 + width // 2,  3* (height // 7)), (50 - width // 2,  3* (height // 7))]], dtype=np.int32)
+    mask = np.zeros_like(frame[:, :, 0])  # Use a single channel for the mask
+    cv2.fillPoly(mask, [trapezoid], 255)
     return cv2.bitwise_and(frame, frame, mask=mask)
 
 
@@ -235,4 +238,6 @@ def display_lines(frame: np.ndarray, lines: Optional[np.ndarray]) -> None:
 
 if __name__ == "__main__":
     video_path = "toronto.mp4"
-    process_video(cv2.VideoCapture(video_path))
+    hsv_min = np.array([0, 8, 89], np.uint8)
+    hsv_max = np.array([150, 51, 255], np.uint8)
+    process_video(cv2.VideoCapture(video_path), hsv_min, hsv_max, size_reduction=1)
